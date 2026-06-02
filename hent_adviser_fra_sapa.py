@@ -1,4 +1,4 @@
-from q_sapa.soeg import soeg
+from q_sapa.soeg import soeg_advis
 
 
 # ==================================================
