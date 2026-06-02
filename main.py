@@ -110,9 +110,18 @@ if __name__ == "__main__":
         workqueue.clear_workqueue(WorkItemStatus.NEW)
 
         # ⚠️ Hvis du ikke har 'page', skal du oprette den her
-        page = None  # ← erstat med din browser/page setup
+from q_sapa import launch
 
-        asyncio.run(populate_queue(workqueue, page))
+async def run_queue():
+    browser, page = await launch()
+
+    try:
+        await populate_queue(workqueue, page)
+    finally:
+        await browser.close()
+
+
+        asyncio.run(run_queue())
         sys.exit(0)
 
     asyncio.run(process_workqueue(workqueue))

@@ -4,8 +4,9 @@ def behandel_page(item):
     from q_haderslev_vbo.automation_server.ats_find_state import find_state
     import logging
     logger = logging.getLogger(__name__)
-    from q_sapa import launch, soeg, advis_marker_faerdiggjort
-    from q_fasit import launch, fremsoeg_borger, borgeroverblik
+    from q_sapa import launch as sapa_launch, advis_marker_faerdiggjort
+    from q_fasit import launch as fasit_launch, fremsoeg_borger, borgeroverblik
+
     data = item.data
 
     # ==========================================================
