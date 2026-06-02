@@ -14,7 +14,7 @@ async def hent_adviser(
     # ---------------------------------------------
     # ✅ Kør samlet søgeflow
     # ---------------------------------------------
-    resultater = await soeg(
+    resultater = await soeg_advis(
         page=page,
         tekst="Arbejdsskadehændelser",
         debug=debug
