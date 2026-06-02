@@ -4,16 +4,17 @@ def behandel_page(item):
     from q_haderslev_vbo.automation_server.ats_find_state import find_state
     import logging
     logger = logging.getLogger(__name__)
-
+    from q_sapa import launch, soeg, advis_marker_faerdiggjort
+    from q_fasit import launch, fremsoeg_borger, borgeroverblik
     data = item.data
 
     # ==========================================================
     # 🧠 STATES
     # ==========================================================
     class States:
-        SEND_BREV = "1.0 Brev sendt"
-        JOURNALISER_BREV = "1.5 Brev journaliseret"
-        AFSLUT_SAG = "2.0 Sag afsluttet"
+        HENTET_ADVISER = "1.0 Hentet adviser fra SAPA"
+        JOURNALISER_BREV = "2.0 Fremsøgt borger og gemt advis i Fasit"
+        MARKERET_FAERDIGGJORT = "3.0 Advis markeret færdiggjort i SAPA"
 
 
     # ==========================================================
@@ -33,7 +34,7 @@ def behandel_page(item):
 
 
     # ==========================================================
-    step = "SEND_BREV"
+    step = "HENTET_ADVISER"
     # ==========================================================
     state = getattr(States, step)
 
@@ -44,13 +45,14 @@ def behandel_page(item):
         data["box"]["brev_sendt_id"] = 123
         log_step(step, f'ID sat: {data["box"]["brev_sendt_id"]}')
 
+        
         update_item_data(data, item=item)
 
         set_state(state)
 
 
     # ==========================================================
-    step = "JOURNALISER_BREV"
+    step = "2.0 Fremsøgt borger og gemt advis i Fasit"
     # ==========================================================
     state = getattr(States, step)
 
@@ -67,7 +69,7 @@ def behandel_page(item):
 
 
     # ==========================================================
-    step = "AFSLUT_SAG"
+    step = "3.0 Advis markeret færdiggjort i SAPA"
     # ==========================================================
     state = getattr(States, step)
 

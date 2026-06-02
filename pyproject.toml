@@ -7,8 +7,14 @@ requires-python = ">=3.13"
 dependencies = [
     "automation-server-client",
     "q-haderslev-vbo",
+    "q-sapa",
+    "q-fasit",
+    "playwright>=1.59.0",
+
 ]
 
 [tool.uv.sources]
 automation-server-client = { git = "https://github.com/odense-rpa/automation-server-client.git", tag = "v0.3.0" }
 q-haderslev_vbo = { git = "https://github.com/haderslev-rpa/q-haderslev-vbo.git", branch = "main" }
+q-sapa = { git = "https://github.com/haderslev-rpa/q-sapa.git", branch = "main" }
+q-fasit= { git = "https://github.com/haderslev-rpa/q-fasit.git", branch = "main" }
