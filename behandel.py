@@ -1,26 +1,23 @@
-def behandel_page(item):
+async def behandel_page(item, page, session):
 
     from q_haderslev_vbo.automation_server.ats_update_item_data import update_item_data
     from q_haderslev_vbo.automation_server.ats_find_state import find_state
+
+    from q_fasit.launch import launch_fasit
+    from q_fasit.fremsoeg_borger import fremsoeg_borger
+    from q_fasit.borgeroverblik import bo_kommunens_markeringer
+
+    from q_sapa.advis_marker_faerdiggjort import advis_marker_faerdiggjort
+
     import logging
     logger = logging.getLogger(__name__)
-    from q_sapa import launch as sapa_launch, advis_marker_faerdiggjort
-    from q_fasit import launch as fasit_launch, fremsoeg_borger, borgeroverblik
 
     data = item.data
 
-    # ==========================================================
-    # 🧠 STATES
-    # ==========================================================
     class States:
-        HENTET_ADVISER = "1.0 Hentet adviser fra SAPA"
-        JOURNALISER_BREV = "2.0 Fremsøgt borger og gemt advis i Fasit"
-        MARKERET_FAERDIGGJORT = "3.0 Advis markeret færdiggjort i SAPA"
+        FREMSOEGT_BORGER = "1.0 Fremsøgt borger og gemt advis i Fasit"
+        SAPA_FAERDIG = "2.0 Advis markeret færdiggjort i SAPA"
 
-
-    # ==========================================================
-    # 🔁 HELPERS
-    # ==========================================================
     def har_state(state):
         return find_state(data, search_text=state)
 
@@ -33,54 +30,60 @@ def behandel_page(item):
     def log_step(step, text):
         logger.info(f"[{step}] {text}")
 
-
     # ==========================================================
-    step = "HENTET_ADVISER"
+    # ✅ STEP 1 – FASIT
     # ==========================================================
-    state = getattr(States, step)
+    state = States.FREMSOEGT_BORGER
 
     if mangler_state(state):
 
-        log_step(step, "Start")
+        log_step(state, "Starter FASIT")
 
-        data["box"]["brev_sendt_id"] = 123
-        log_step(step, f'ID sat: {data["box"]["brev_sendt_id"]}')
+        cpr = data["box"]["cpr"]
+        tekst = data["box"]["haendelse"]
+        dato = data["box"]["dato"]
 
-        
+        note_tekst = f"{dato} - {tekst}"
+
+        await launch_fasit(page=page, session=session, credential_name="DIRXOPS")
+
+        # ✅🔥 VIGTIG FIX HER
+        page = await fremsoeg_borger(
+            page=page,
+            session=session,
+            cpr=cpr
+        )
+
+        print("✅ Aktiv page efter fremsoeg:", page.url)
+        print("Page lukket?", page.is_closed())
+
+        await bo_kommunens_markeringer(
+            page=page,
+            session=session,
+            tekst=note_tekst,
+        )
+
+        data["box"]["journal_id"] = "FASIT_OK"
         update_item_data(data, item=item)
-
         set_state(state)
 
-
     # ==========================================================
-    step = "2.0 Fremsøgt borger og gemt advis i Fasit"
+    # ✅ STEP 2 – SAPA
     # ==========================================================
-    state = getattr(States, step)
+    state = States.SAPA_FAERDIG
 
     if mangler_state(state):
 
-        log_step(step, "Start")
+        log_step(state, "Starter SAPA")
 
-        data["box"]["journal_id"] = 456
-        log_step(step, f'ID sat: {data["box"]["journal_id"]}')
+        url = data["box"]["url_til_advis"]
 
+        await advis_marker_faerdiggjort(
+            page=page,
+            session=session,
+            url_til_advis=url
+        )
+
+        data["box"]["afslutnings_id"] = "SAPA_OK"
         update_item_data(data, item=item)
-
-        set_state(state)
-
-
-    # ==========================================================
-    step = "3.0 Advis markeret færdiggjort i SAPA"
-    # ==========================================================
-    state = getattr(States, step)
-
-    if mangler_state(state):
-
-        log_step(step, "Start")
-
-        data["box"]["afslutnings_id"] = 789
-        log_step(step, f'ID sat: {data["box"]["afslutnings_id"]}')
-
-        update_item_data(data, item=item)
-
         set_state(state)

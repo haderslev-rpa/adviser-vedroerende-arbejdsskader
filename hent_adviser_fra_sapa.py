@@ -1,23 +1,26 @@
-from q_sapa.soeg import soeg_advis
+from q_sapa.launch import launch_sapa
+from q_sapa.advis_soeg import soeg_advis
 
-
-# ==================================================
-# ✅ HENT ADVISER (KALDES FRA MAIN)
-# ==================================================
-async def hent_adviser(
-    page,
-    debug: bool = False
-) -> list:
-
+async def hent_adviser(page, session) -> list:
     print("🔍 Henter adviser fra SAPA...")
 
-    # ---------------------------------------------
-    # ✅ Kør samlet søgeflow
-    # ---------------------------------------------
-    resultater = await soeg_advis(
-        page=page,
-        tekst="Arbejdsskadehændelser",
-        debug=debug
-    )
+    try:
 
-    return resultater
+        # ✅ Login / navigation
+        await session.recorder.start_recording(120)
+        await launch_sapa(page=page, session=session, advis=True,)
+
+        # ✅ Kør søgning
+        resultater = await soeg_advis(
+            page=page,
+            session=session,
+            tekst="Arbejdsskadehændelser",
+        )
+
+        return resultater
+
+    finally:
+        # ✅ Luk kun hvis vi selv startede
+        if session:
+            print("🛑 Lukker browser")
+            await session.close()
