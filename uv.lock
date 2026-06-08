@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "q-sapa"
 version = "0.1.0"
-source = { git = "https://github.com/haderslev-rpa/q-sapa.git?branch=main#d9a872bab4381d6111ea6d3b9aabd85ec7efcacb" }
+source = { git = "https://github.com/haderslev-rpa/q-sapa.git?branch=main#7cfeddc8d8968fc03ae5d5bc0f711b5c2d4f2738" }
 dependencies = [
     { name = "automation-server-client" },
     { name = "playwright" },
