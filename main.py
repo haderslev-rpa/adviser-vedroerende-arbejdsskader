@@ -2,9 +2,7 @@ import asyncio
 from asyncio.log import logger
 import logging
 import sys
-
 from requests import session
-
 from dotenv import load_dotenv
 load_dotenv()
 
