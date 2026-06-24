@@ -1,5 +1,5 @@
-from q_sapa.launch import launch_sapa
-from q_sapa.advis_soeg import soeg_advis
+from q_sapa.functionality.launch import launch_sapa
+from q_sapa.functionality.advis_soeg import soeg_advis
 
 async def hent_adviser(page, session) -> list:
     print("🔍 Henter adviser fra SAPA...")
