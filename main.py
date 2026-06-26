@@ -1,9 +1,8 @@
 import asyncio
-from asyncio.log import logger
 import logging
 import sys
-from requests import session
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from behandel import behandel_page
@@ -48,23 +47,27 @@ async def populate_queue(workqueue: Workqueue, debug: bool):
     await session.start()
     page = await session.new_page()
 
-    adviser = await hent_adviser(session=session, page=page)
+    try:
+        adviser = await hent_adviser(session=session, page=page)
 
-    for advis in adviser:
-        data_json = {}
+        for advis in adviser:
+            data_json = {}
 
-        update_item_data(
-            data_json,
-            box_updates=advis,
-            update=False
-        )
+            update_item_data(
+                data_json,
+                box_updates=advis,
+                update=False
+            )
 
-        workqueue.add_item(
-            data=data_json,
-            reference=data_json["box"]["cpr"]
-        )
+            workqueue.add_item(
+                data=data_json,
+                reference=data_json["box"]["cpr"]
+            )
 
-    logger.info(f"{len(adviser)} items tilføjet til workqueue")
+        logger.info(f"{len(adviser)} items tilføjet til workqueue")
+
+    finally:
+        await session.close()
 
 
 # ---------------------------------------------------------------------------
@@ -82,28 +85,21 @@ async def process_workqueue(workqueue: Workqueue, debug: bool):
         for item in workqueue:
 
             with item:
-
                 data = item.data
 
-                # ✅🔥 NY PAGE FOR HVER ITEM (FIX)
+                # ✅ Ny page for hvert item
                 page = await session.new_page()
 
                 try:
                     print("\n==================================== NEXT ITEM ====================================")
                     pprint(data)
 
-                    # --------------------------------------------------
-                    # PROCESS FLOW
-                    # --------------------------------------------------
                     await behandel_page(
                         item=item,
                         session=session,
                         page=page
                     )
 
-                    # --------------------------------------------------
-                    # Update item data
-                    # --------------------------------------------------
                     update_item_data(
                         data,
                         status="Completed",
@@ -114,32 +110,21 @@ async def process_workqueue(workqueue: Workqueue, debug: bool):
                     item.update(data)
                     item.complete("Completed")
 
-                    # ✅ Optional cleanup
                     await session.close_other_pages(page)
 
                 except WorkItemError as e:
-                    # =================================================
-                    # ✅ SOFT ERROR
-                    # - Item fejler
-                    # =================================================
                     logger.error(f"WorkItemError for item {item.reference}: {e}")
                     item.fail(str(e))
-                    
-                    # Playwright:
-                    # Luk browser for sikkerhed (ny session på næste item)
-                    session = BrowserSession(headless=True,debug=debug)
+
+                    # Restart browser
+                    await session.close()
+                    session = BrowserSession(headless=True, debug=debug)
                     await session.start()
 
                 except Exception as e:
-                    # =================================================
-                    # ❌ HARD ERROR
-                    # - Screenshot tages
-                    # - Browser lukkes
-                    # - Processen STOPPER
-                    # =================================================
                     logger.exception("Uventet fejl")
 
-                    try: #Playwright:
+                    try:
                         if session.context and session.context.pages:
                             page = session.context.pages[-1]
                             await session.screenshot(
@@ -150,10 +135,7 @@ async def process_workqueue(workqueue: Workqueue, debug: bool):
                     except Exception:
                         logger.warning("Kunne ikke tage screenshot ved hard error")
 
-                    # Luk ALT (Playwright)
                     await session.close()
-
-                    # Stop hele processen (Automation Server genstarter)
                     raise
 
     finally:
