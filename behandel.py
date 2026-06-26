@@ -3,11 +3,11 @@ async def behandel_page(item, page, session):
     from q_haderslev_vbo.automation_server.ats_update_item_data import update_item_data
     from q_haderslev_vbo.automation_server.ats_find_state import find_state
 
-    from q_fasit.launch import launch_fasit
-    from q_fasit.fremsoeg_borger import fremsoeg_borger
-    from q_fasit.borgeroverblik import bo_kommunens_markeringer
+    from q_fasit.functionality.launch import launch_fasit
+    from q_fasit.functionality.fremsoeg_borger import fremsoeg_borger
+    from q_fasit.functionality.borgeroverblik import bo_kommunens_markeringer
 
-    from q_sapa.advis_marker_faerdiggjort import advis_marker_faerdiggjort
+    from q_sapa.functionality.advis_marker_faerdiggjort import advis_marker_faerdiggjort
 
     import logging
     logger = logging.getLogger(__name__)
