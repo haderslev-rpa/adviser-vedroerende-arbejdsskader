@@ -115,7 +115,7 @@ async def process_workqueue(workqueue: Workqueue, debug: bool):
                     item.complete("Completed")
 
                     # ✅ Optional cleanup
-                    await session.close_other_pages(page)
+                    await session.close_all_other_tabs(page)
 
                 except WorkItemError as e:
                     # =================================================
