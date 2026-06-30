@@ -72,8 +72,6 @@ async def behandel_page(item, page, session):
             tekst=note_tekst,
         )
 
-        data["box"]["journal_id"] = "FASIT_OK"
-
         set_state(state)
 
     # ==========================================================
@@ -93,7 +91,5 @@ async def behandel_page(item, page, session):
             session=session,
             url_til_advis=url
         )
-
-        data["box"]["afslutnings_id"] = "SAPA_OK"
 
         set_state(state)
