@@ -14,17 +14,29 @@ async def behandel_page(item, page, session):
 
     data = item.data
 
+    # ==========================================================
+    # 🧠 STATES (konstanter → faste værdier)
+    # ==========================================================
     class States:
         FREMSOEGT_BORGER = "1.0 Fremsøgt borger og gemt advis i Fasit"
         SAPA_FAERDIG = "2.0 Advis markeret færdiggjort i SAPA"
 
-    def har_state(state):
-        return find_state(data, search_text=state)
+    # ==========================================================
+    # 🔁 HELPERS (hjælpefunktioner → små værktøjer)
+    # ==========================================================
+    def mangler_state(state, step):
+        states = data.get("state", [])
 
-    def mangler_state(state):
-        return not har_state(state)
+        match = next((s for s in states if state in s), None)
+
+        if match:
+            log_step(step, f'Skip "{match}"')
+            return False
+
+        return True
 
     def set_state(state):
+        # ✅ ét kald (bedre)
         update_item_data(data, item=item, state=state)
 
     def log_step(step, text):
@@ -33,11 +45,12 @@ async def behandel_page(item, page, session):
     # ==========================================================
     # ✅ STEP 1 – FASIT
     # ==========================================================
-    state = States.FREMSOEGT_BORGER
+    step = "FREMSOEGT_BORGER"
+    state = getattr(States, step)
 
-    if mangler_state(state):
+    if mangler_state(state, step):
 
-        log_step(state, "Starter FASIT")
+        log_step(step, "Starter FASIT")
 
         cpr = data["box"]["cpr"]
         tekst = data["box"]["haendelse"]
@@ -53,9 +66,6 @@ async def behandel_page(item, page, session):
             cpr=cpr
         )
 
-        print("✅ Aktiv page efter fremsoeg:", page.url)
-        print("Page lukket?", page.is_closed())
-
         await bo_kommunens_markeringer(
             page=page,
             session=session,
@@ -63,17 +73,18 @@ async def behandel_page(item, page, session):
         )
 
         data["box"]["journal_id"] = "FASIT_OK"
-        update_item_data(data, item=item)
+
         set_state(state)
 
     # ==========================================================
     # ✅ STEP 2 – SAPA
     # ==========================================================
-    state = States.SAPA_FAERDIG
+    step = "SAPA_FAERDIG"
+    state = getattr(States, step)
 
-    if mangler_state(state):
+    if mangler_state(state, step):
 
-        log_step(state, "Starter SAPA")
+        log_step(step, "Starter SAPA")
 
         url = data["box"]["url_til_advis"]
 
@@ -84,5 +95,5 @@ async def behandel_page(item, page, session):
         )
 
         data["box"]["afslutnings_id"] = "SAPA_OK"
-        update_item_data(data, item=item)
+
         set_state(state)

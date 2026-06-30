@@ -22,6 +22,10 @@ from automation_server_client import (
 from q_haderslev_vbo.automation_server.ats_update_item_data import update_item_data
 
 
+def get_headless_flag():  #Skriv HEADLESS=false i .env for at se browseren under kørsel
+    return os.getenv("HEADLESS", "true").lower() == "true"
+
+
 # ---------------------------------------------------------------------------
 # LOGGING
 # ---------------------------------------------------------------------------
@@ -44,8 +48,7 @@ async def populate_queue(workqueue: Workqueue, debug: bool):
     logger.info("Populate queue mode started")
 
     print("🔄 Starter hentning af adviser...")
-
-    headless = os.getenv("HEADLESS", "true").lower() == "true" #Skriv HEADLESS=false i .env for at se browseren under kørsel
+    headless = get_headless_flag()
     session = BrowserSession(headless=headless,debug=debug)
 
     await session.start()
@@ -77,8 +80,8 @@ async def process_workqueue(workqueue: Workqueue, debug: bool):
 
     logger = logging.getLogger(__name__)
     logger.info(f"Process workqueue mode started (debug={debug})")
-
-    session = BrowserSession(headless=True, debug=debug)
+    headless = get_headless_flag()
+    session = BrowserSession(headless=headless, debug=debug)
     await session.start()
 
     try:
@@ -130,7 +133,7 @@ async def process_workqueue(workqueue: Workqueue, debug: bool):
                     
                     # Playwright:
                     # Luk browser for sikkerhed (ny session på næste item)
-                    headless = os.getenv("HEADLESS", "true").lower() == "true" #Skriv HEADLES=false i .env for at se browseren under kørsel
+                    headless = get_headless_flag()
                     session = BrowserSession(headless=headless,debug=debug)
                     await session.start()
 

@@ -337,7 +337,7 @@ wheels = [
 [[package]]
 name = "q-fasit"
 version = "0.1.0"
-source = { git = "https://github.com/haderslev-rpa/q-fasit.git?branch=master#c3f974cb622204e3cbe4033edbf02f0b1ec8cc61" }
+source = { git = "https://github.com/haderslev-rpa/q-fasit.git?branch=master#efe5f85942941a0e15bdee630911ba20b37deaba" }
 dependencies = [
     { name = "automation-server-client" },
     { name = "playwright" },
@@ -358,7 +358,7 @@ dependencies = [
 [[package]]
 name = "q-sapa"
 version = "0.1.0"
-source = { git = "https://github.com/haderslev-rpa/q-sapa.git?branch=main#3a81e3fb5fdb8a500172edeb2d126651fc53cdcd" }
+source = { git = "https://github.com/haderslev-rpa/q-sapa.git?branch=main#b4956023181720f7542083143ef5150fbddc0caf" }
 dependencies = [
     { name = "automation-server-client" },
     { name = "playwright" },
