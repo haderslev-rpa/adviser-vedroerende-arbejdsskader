@@ -2,6 +2,7 @@ import asyncio
 from asyncio.log import logger
 import logging
 import sys
+import os
 from requests import session
 from dotenv import load_dotenv
 load_dotenv()
@@ -44,7 +45,9 @@ async def populate_queue(workqueue: Workqueue, debug: bool):
 
     print("🔄 Starter hentning af adviser...")
 
-    session = BrowserSession(headless=True, debug=debug)
+    headless = os.getenv("HEADLESS", "true").lower() == "true" #Skriv HEADLESS=false i .env for at se browseren under kørsel
+    session = BrowserSession(headless=headless,debug=debug)
+
     await session.start()
     page = await session.new_page()
 
@@ -127,7 +130,8 @@ async def process_workqueue(workqueue: Workqueue, debug: bool):
                     
                     # Playwright:
                     # Luk browser for sikkerhed (ny session på næste item)
-                    session = BrowserSession(headless=True,debug=debug)
+                    headless = os.getenv("HEADLESS", "true").lower() == "true" #Skriv HEADLES=false i .env for at se browseren under kørsel
+                    session = BrowserSession(headless=headless,debug=debug)
                     await session.start()
 
                 except Exception as e:
