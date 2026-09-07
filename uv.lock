@@ -337,7 +337,7 @@ wheels = [
 [[package]]
 name = "q-fasit"
 version = "0.1.0"
-source = { git = "https://github.com/haderslev-rpa/q-fasit.git?branch=master#efe5f85942941a0e15bdee630911ba20b37deaba" }
+source = { git = "https://github.com/haderslev-rpa/q-fasit.git?branch=master#d0c8c7860c1e3abd1c50158a0cbdc414c2272306" }
 dependencies = [
     { name = "automation-server-client" },
     { name = "playwright" },
