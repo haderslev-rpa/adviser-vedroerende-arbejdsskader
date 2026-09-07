@@ -1,12 +1,7 @@
 import asyncio
 import logging
-import os
 import sys
 from pprint import pprint
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from automation_server_client import (
     AutomationServer,
@@ -14,6 +9,7 @@ from automation_server_client import (
     WorkItemStatus,
     Workqueue,
 )
+
 from behandel import behandel_page
 from hent_adviser_fra_sapa import hent_adviser
 from q_fasit.api.client import FasitApiClient
@@ -27,39 +23,17 @@ from q_haderslev_vbo.playwright.browser_session import BrowserSession
 logger = logging.getLogger(__name__)
 
 
-def get_headless_flag() -> bool:
-    """
-    Læser HEADLESS fra .env.
+# ---------------------------------------------------------------------------
+# KONFIGURATION
+# ---------------------------------------------------------------------------
 
-    Skriv HEADLESS=false for at se browseren under kørsel.
-    """
-    return os.getenv(
-        "HEADLESS",
-        "true",
-    ).strip().lower() == "true"
+HEADLESS = True
+FASIT_HEADLESS = True
 
+FASIT_CREDENTIAL_NAME = "DIRXOPS"
 
-def get_fasit_headless_flag() -> bool:
-    """
-    Læser FASIT_HEADLESS fra .env.
-
-    Hvis FASIT_HEADLESS ikke er angivet, genbruges HEADLESS.
-    """
-    default_value = (
-        "true"
-        if get_headless_flag()
-        else "false"
-    )
-
-    return os.getenv(
-        "FASIT_HEADLESS",
-        default_value,
-    ).strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "ja",
-    }
+FASIT_FALLBACK_LIFETIME_SECONDS = 15 * 60
+FASIT_EXPIRY_MARGIN_SECONDS = 60
 
 
 # ---------------------------------------------------------------------------
@@ -68,12 +42,29 @@ def get_fasit_headless_flag() -> bool:
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    format=(
+        "%(asctime)s [%(levelname)s] "
+        "%(name)s: %(message)s"
+    ),
 )
 
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("automation_server_client").setLevel(logging.WARNING)
-logging.getLogger("debugpy").setLevel(logging.WARNING)
+logging.getLogger(
+    "httpx"
+).setLevel(
+    logging.WARNING
+)
+
+logging.getLogger(
+    "automation_server_client"
+).setLevel(
+    logging.WARNING
+)
+
+logging.getLogger(
+    "debugpy"
+).setLevel(
+    logging.WARNING
+)
 
 
 # ---------------------------------------------------------------------------
@@ -84,12 +75,20 @@ async def populate_queue(
     workqueue: Workqueue,
     debug: bool,
 ) -> None:
-    logger.info("Populate queue mode started")
-    print("Starter hentning af adviser...")
+    """
+    Henter adviser fra SAPA og opretter dem som
+    elementer i ATS-workqueuen.
+    """
+    logger.info(
+        "Populate queue mode started."
+    )
 
-    headless = get_headless_flag()
+    print(
+        "Starter hentning af adviser..."
+    )
+
     session = BrowserSession(
-        headless=headless,
+        headless=HEADLESS,
         debug=debug,
     )
 
@@ -97,6 +96,7 @@ async def populate_queue(
 
     try:
         page = await session.new_page()
+
         adviser = await hent_adviser(
             session=session,
             page=page,
@@ -117,9 +117,10 @@ async def populate_queue(
             )
 
         logger.info(
-            "%s items tilføjet til workqueue",
+            "%s items tilføjet til workqueue.",
             len(adviser),
         )
+
     finally:
         await session.close()
 
@@ -132,23 +133,32 @@ async def process_workqueue(
     workqueue: Workqueue,
     debug: bool,
 ) -> None:
+    """
+    Behandler elementerne i ATS-workqueuen.
+
+    BrowserSession anvendes til SAPA.
+    FasitApiClient anvendes til FASIT.
+    """
     logger.info(
-        "Process workqueue mode started (debug=%s)",
+        "Process workqueue mode started "
+        "(debug=%s).",
         debug,
     )
 
-    headless = get_headless_flag()
-
     session = BrowserSession(
-        headless=headless,
+        headless=HEADLESS,
         debug=debug,
     )
 
     fasit_token_manager = FasitTokenManager(
-        credential_name="DIRXOPS",
-        headless=get_fasit_headless_flag(),
-        fallback_lifetime_seconds=15 * 60,
-        expiry_margin_seconds=60,
+        credential_name=FASIT_CREDENTIAL_NAME,
+        headless=FASIT_HEADLESS,
+        fallback_lifetime_seconds=(
+            FASIT_FALLBACK_LIFETIME_SECONDS
+        ),
+        expiry_margin_seconds=(
+            FASIT_EXPIRY_MARGIN_SECONDS
+        ),
     )
 
     fasit_api_client = FasitApiClient(
@@ -165,30 +175,45 @@ async def process_workqueue(
 
                 try:
                     print(
-                        "\n==================================== "
+                        "\n"
+                        "==================================== "
                         "NEXT ITEM "
                         "===================================="
                     )
-                    pprint(data)
+
+                    pprint(
+                        data
+                    )
 
                     await behandel_page(
                         item=item,
                         session=session,
                         page=page,
-                        fasit_api_client=fasit_api_client,
+                        fasit_api_client=(
+                            fasit_api_client
+                        ),
                     )
 
                     update_item_data(
                         data,
                         status="Completed",
-                        status_code="Advis færdiggjort",
+                        status_code=(
+                            "Advis færdiggjort"
+                        ),
                         item=item,
                     )
 
-                    item.update(data)
-                    item.complete("Completed")
+                    item.update(
+                        data
+                    )
 
-                    await session.close_all_other_tabs(page)
+                    item.complete(
+                        "Completed"
+                    )
+
+                    await session.close_all_other_tabs(
+                        page
+                    )
 
                 except WorkItemError as error:
                     logger.error(
@@ -197,19 +222,22 @@ async def process_workqueue(
                         error,
                     )
 
-                    item.fail(str(error))
+                    item.fail(
+                        str(error)
+                    )
 
                     await session.close()
 
                     session = BrowserSession(
-                        headless=headless,
+                        headless=HEADLESS,
                         debug=debug,
                     )
+
                     await session.start()
 
                 except Exception as error:
                     logger.exception(
-                        "Uventet fejl for item %s",
+                        "Uventet fejl for item %s.",
                         item.reference,
                     )
 
@@ -218,7 +246,9 @@ async def process_workqueue(
                             session.context
                             and session.context.pages
                         ):
-                            error_page = session.context.pages[-1]
+                            error_page = (
+                                session.context.pages[-1]
+                            )
 
                             await session.screenshot(
                                 error_page,
@@ -228,13 +258,17 @@ async def process_workqueue(
                                 ),
                                 always=True,
                             )
+
                     except Exception:
                         logger.warning(
-                            "Kunne ikke tage screenshot ved hard error"
+                            "Kunne ikke tage screenshot "
+                            "ved hard error."
                         )
 
                     await session.close()
+
                     raise
+
     finally:
         await fasit_api_client.close()
         await fasit_token_manager.close()
@@ -245,29 +279,51 @@ async def process_workqueue(
 # ENTRY POINT
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    DEBUG = "--debug" in sys.argv
-    QUEUE_MODE = "--queue" in sys.argv
+def main() -> None:
+    """
+    Starter processen i queue-mode eller process-mode.
+
+    Kommandolinjeflag:
+    - --debug: Aktiverer debug-mode.
+    - --queue: Henter adviser og udfylder workqueuen.
+    """
+    debug = "--debug" in sys.argv
+    queue_mode = "--queue" in sys.argv
+
+    logger.info(
+        "Starter proces. "
+        "queue_mode=%s, debug=%s, "
+        "headless=%s, fasit_headless=%s.",
+        queue_mode,
+        debug,
+        HEADLESS,
+        FASIT_HEADLESS,
+    )
 
     ats = AutomationServer.from_environment()
     workqueue = ats.workqueue()
 
-    if QUEUE_MODE:
+    if queue_mode:
         workqueue.clear_workqueue(
             WorkItemStatus.NEW
         )
 
         asyncio.run(
             populate_queue(
-                workqueue,
-                debug=DEBUG,
+                workqueue=workqueue,
+                debug=debug,
             )
         )
-        sys.exit(0)
+
+        return
 
     asyncio.run(
         process_workqueue(
-            workqueue,
-            debug=DEBUG,
+            workqueue=workqueue,
+            debug=debug,
         )
     )
+
+
+if __name__ == "__main__":
+    main()
