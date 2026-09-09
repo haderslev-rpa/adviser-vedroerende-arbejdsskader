@@ -86,6 +86,7 @@ async def behandel_page(
         citizen_id = await hent_borger_id(
             api_client=fasit_api_client,
             cpr=cpr,
+            opret_borger_hvis_ikke_findes=True,
         )
 
         result = await opret_kommunens_markeringer(
